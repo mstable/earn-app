@@ -8,7 +8,7 @@ A web frontend for interacting with the deprecated Earn section of the [mStable 
 
 ### Installation
 
-1. `git clone git@github.com:mstable/mStable-earn-app.git && cd mStable-earn-app`
+1. `git clone git@github.com:mstable/earn-app.git && cd earn-app`
 2. `cp .env.example.mainnet .env` to connect to Mainnet
 3. `yarn`
 5. `yarn codegen`
