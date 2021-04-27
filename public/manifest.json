@@ -1,0 +1,6 @@
+{
+  "name": "mStable Earn",
+  "iconPath": "icons/mstable-logo.svg",
+  "description": "Ecosystem rewards with mStable",
+  "providedBy": { "name": "mStable", "url": "https://earn.mstable.org" }
+}

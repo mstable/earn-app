@@ -1,0 +1,74 @@
+{
+  "name": "mStable",
+  "projects": {
+    "protocol": {
+      "includes": ["./shared/*", "./protocol/*"],
+      "schemaPath": "remote-schema.graphql",
+      "extensions": {
+        "endpoints": {
+          "ropsten": {
+            "url": "https://api.thegraph.com/subgraphs/name/mstable/mstable-protocol-ropsten",
+            "introspect": false
+          }
+        }
+      }
+    },
+    "ecosystem": {
+      "includes": ["./shared/*", "./ecosystem/*"],
+      "schemaPath": "remote-schema.graphql",
+      "extensions": {
+        "endpoints": {
+          "kovan-staging": {
+            "url": "https://api.thegraph.com/subgraphs/name/mstable/mstable-ecosystem-kovan",
+            "introspect": false
+          }
+        }
+      }
+    },
+    "feeders": {
+      "includes": ["./shared/*", "./feeders/*"],
+      "schemaPath": "remote-schema.graphql",
+      "extensions": {
+        "endpoints": {
+          "ropsten": {
+            "url": "https://api.thegraph.com/subgraphs/name/mstable/mstable-feeders-ropsten",
+            "introspect": false
+          }
+        }
+      }
+    },
+    "balancer": {
+      "includes": ["./shared/*", "./balancer/*"],
+      "extensions": {
+        "endpoints": {
+          "mainnet": {
+            "url": "https://api.thegraph.com/subgraphs/name/balancer-labs/balancer",
+            "introspect": false
+          }
+        }
+      }
+    },
+    "uniswap": {
+      "includes": ["./shared/*", "./uniswap/*"],
+      "extensions": {
+        "endpoints": {
+          "mainnet": {
+            "url": "https://api.thegraph.com/subgraphs/name/ianlapham/uniswapv2",
+            "introspect": false
+          }
+        }
+      }
+    },
+    "blocks": {
+      "includes": ["./shared/*", "./blocks/*"],
+      "extensions": {
+        "endpoints": {
+          "mainnet": {
+            "url": "https://api.thegraph.com/subgraphs/name/blocklytics/ethereum-blocks",
+            "introspect": false
+          }
+        }
+      }
+    }
+  }
+}

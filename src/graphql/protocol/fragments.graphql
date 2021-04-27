@@ -1,0 +1,85 @@
+fragment TokenAll on Token {
+  id
+  address
+  decimals
+  symbol
+  totalSupply {
+    ...MetricFields
+  }
+}
+
+fragment SavingsContractAll on SavingsContract {
+  id
+  totalSavings {
+    ...MetricFields
+  }
+  latestExchangeRate {
+    rate
+    timestamp
+  }
+  dailyAPY
+  version
+  active
+}
+
+fragment TransactionFields on Transaction {
+  id
+  hash
+  timestamp
+  block
+  sender
+}
+
+fragment MetricFields on Metric {
+  exact
+  decimals
+  simple
+}
+
+fragment BassetAll on Basset {
+  id
+  vaultBalance {
+    ...MetricFields
+  }
+  isTransferFeeCharged
+  ratio
+  status
+  maxWeight
+  token {
+    ...TokenAll
+  }
+}
+
+fragment BoostedSavingsVaultAll on BoostedSavingsVault {
+  id
+  lastUpdateTime
+  lockupDuration
+  unlockPercentage
+  periodDuration
+  periodFinish
+  rewardPerTokenStored
+  rewardRate
+  stakingContract
+  stakingToken {
+    address
+  }
+  totalStakingRewards
+  totalSupply
+  accounts(where: { account: $account }) @include(if: $hasAccount) {
+    id
+    boostedBalance
+    lastAction
+    lastClaim
+    rawBalance
+    rewardCount
+    rewardPerTokenPaid
+    rewards
+    rewardEntries(orderBy: index, orderDirection: asc) {
+      id
+      finish
+      index
+      rate
+      start
+    }
+  }
+}
