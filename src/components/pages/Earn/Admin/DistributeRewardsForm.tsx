@@ -11,11 +11,20 @@ import { NumberFormat } from '../../../core/Amount'
 import { ThemedSkeleton } from '../../../core/ThemedSkeleton'
 import { useEarnAdminDispatch, useEarnAdminState } from './EarnAdminProvider'
 import { Interfaces } from '../../../../types'
-import { RewardsDistributor__factory } from '../../../../typechain'
+import {
+  RewardsDistributor,
+  RewardsDistributorDual,
+  RewardsDistributorDual__factory,
+  RewardsDistributor__factory,
+} from '../../../../typechain'
 import { BigDecimal } from '../../../../web3/BigDecimal'
 import { TransactionManifest } from '../../../../web3/TransactionManifest'
 import { Button } from '../../../core/Button'
 import { SendButton } from '../../../forms/SendButton'
+
+interface Props {
+  hasDualReward?: boolean
+}
 
 const Row = styled.div`
   margin-bottom: 16px;
@@ -171,7 +180,7 @@ const Inputs: FC<{ reason?: string }> = ({ reason }) => {
   )
 }
 
-export const DistributeRewardsForm: FC = () => {
+export const DistributeRewardsForm: FC<Props> = ({ hasDualReward = false }) => {
   const account = useOwnAccount()
   const signer = useSigner()
   const {
@@ -212,11 +221,16 @@ export const DistributeRewardsForm: FC = () => {
   const valid = !reason
 
   const createTransaction = useCallback(
-    (formId: string): TransactionManifest<Interfaces.RewardsDistibutor, 'distributeRewards'> | void => {
-      const contract =
-        signer && rewardsDistributorAddress ? RewardsDistributor__factory.connect(rewardsDistributorAddress, signer) : undefined
+    (
+      formId: string,
+    ): TransactionManifest<Interfaces.RewardsDistributor | Interfaces.RewardsDistributorDual, 'distributeRewards'> | void => {
+      const contract = (() => {
+        if (!signer || !rewardsDistributorAddress) return
+        if (hasDualReward) return RewardsDistributorDual__factory.connect(rewardsDistributorAddress, signer)
+        return RewardsDistributor__factory.connect(rewardsDistributorAddress, signer)
+      })()
 
-      const args: [string[], BigNumber[]] = Object.entries(recipientAmounts)
+      const baseArgs: [string[], BigNumber[]] = Object.entries(recipientAmounts)
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
         .filter(([_, { custom }]) => (useCustomRecipients ? !!custom : !custom))
         .reduce<[string[], BigNumber[]]>(
@@ -230,11 +244,14 @@ export const DistributeRewardsForm: FC = () => {
           [[], []],
         )
 
-      if (contract && args.length > 0) {
-        return new TransactionManifest(
-          contract,
+      if (!contract || !baseArgs.length) return
+
+      if (hasDualReward) {
+        return new TransactionManifest<Interfaces.RewardsDistributorDual, 'distributeRewards'>(
+          contract as RewardsDistributorDual,
           'distributeRewards',
-          args,
+          // change
+          [...baseArgs, [(recipientAmounts[0] as BigDecimal).exact]],
           {
             present: 'Distributing rewards',
             past: 'Distributed rewards',
@@ -242,8 +259,19 @@ export const DistributeRewardsForm: FC = () => {
           formId,
         )
       }
+
+      return new TransactionManifest<Interfaces.RewardsDistributor, 'distributeRewards'>(
+        contract as RewardsDistributor,
+        'distributeRewards',
+        baseArgs,
+        {
+          present: 'Distributing rewards',
+          past: 'Distributed rewards',
+        },
+        formId,
+      )
     },
-    [signer, recipientAmounts, rewardsDistributorAddress, useCustomRecipients],
+    [recipientAmounts, hasDualReward, signer, rewardsDistributorAddress, useCustomRecipients],
   )
 
   return (

@@ -15,6 +15,10 @@ import { StakingRewardsContract } from '../../../../context/earn/types'
 import { Token } from '../../../../types'
 import { useSigner } from '../../../../context/AccountProvider'
 
+interface Props {
+  hasDualReward?: boolean
+}
+
 enum Columns {
   StakingToken,
   Collateral,
@@ -51,7 +55,7 @@ const COLUMNS = [
   },
 ]
 
-export const StakingRewardContractsTable: FC<{}> = () => {
+export const StakingRewardContractsTable: FC<Props> = ({ hasDualReward = false }) => {
   const signer = useSigner()
   const stakingRewardsContracts = useStakingRewardsContracts()
   const { setRecipientAmount } = useEarnAdminDispatch()
@@ -129,6 +133,7 @@ export const StakingRewardContractsTable: FC<{}> = () => {
                   case Columns.AmountToFund: {
                     return (
                       <div>
+                        <AmountInput value={recipientAmounts[id]?.formValue} onChange={formValue => setRecipientAmount(id, formValue)} />
                         <AmountInput value={recipientAmounts[id]?.formValue} onChange={formValue => setRecipientAmount(id, formValue)} />
                       </div>
                     )
