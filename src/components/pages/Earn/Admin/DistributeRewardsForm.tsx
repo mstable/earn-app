@@ -21,10 +21,7 @@ import { BigDecimal } from '../../../../web3/BigDecimal'
 import { TransactionManifest } from '../../../../web3/TransactionManifest'
 import { Button } from '../../../core/Button'
 import { SendButton } from '../../../forms/SendButton'
-
-interface Props {
-  hasDualReward?: boolean
-}
+import { useToggleDualRewards } from '../../../../hooks/useToggleDualRewards'
 
 const Row = styled.div`
   margin-bottom: 16px;
@@ -36,6 +33,7 @@ const Confirm: FC = () => {
     totalFunds,
     recipientAmounts,
   } = useEarnAdminState()
+  const [hasDualReward] = useToggleDualRewards()
 
   const token = rewardsToken || { decimals: 18, symbol: 'MTA' }
 
@@ -43,7 +41,22 @@ const Confirm: FC = () => {
     <>
       <Row>
         <h3>Total amount</h3>
-        <TokenAmount symbol={token.symbol} amount={totalFunds} decimalPlaces={6} format={NumberFormat.Countup} countup={{ decimals: 6 }} />
+        <TokenAmount
+          symbol={token.symbol}
+          amount={totalFunds?.platform}
+          decimalPlaces={6}
+          format={NumberFormat.Countup}
+          countup={{ decimals: 6 }}
+        />
+        {hasDualReward && (
+          <TokenAmount
+            symbol={token.symbol}
+            amount={totalFunds?.reward}
+            decimalPlaces={6}
+            format={NumberFormat.Countup}
+            countup={{ decimals: 6 }}
+          />
+        )}
       </Row>
       <Row>
         <h3>Breakdown</h3>
@@ -54,10 +67,17 @@ const Confirm: FC = () => {
               <div key={key}>
                 <div>{key}</div>
                 <div>
-                  {recipientAmounts[key].amount
-                    ? `${recipientAmounts[key].amount?.format()} (${recipientAmounts[key].amount?.exact})`
+                  {recipientAmounts[key].reward?.amount
+                    ? `${recipientAmounts[key].reward?.amount?.format()} (${recipientAmounts[key].reward?.amount?.exact})`
                     : '-'}
                 </div>
+                {hasDualReward && (
+                  <div>
+                    {recipientAmounts[key].reward?.amount
+                      ? `${recipientAmounts[key].platform?.amount?.format()} (${recipientAmounts[key].platform?.amount?.exact})`
+                      : '-'}
+                  </div>
+                )}
                 <br />
               </div>
             ))}
@@ -67,6 +87,7 @@ const Confirm: FC = () => {
   )
 }
 
+// FIXME: - fix to use platformToken too for approval?
 const Input: FC = () => {
   const {
     data: { rewardsToken, rewardsDistributor },
@@ -76,19 +97,19 @@ const Input: FC = () => {
 
   return rewardsToken && spender ? (
     <Row>
-      {totalFunds && rewardsToken?.allowances[spender]?.exact.lt(totalFunds.exact) ? (
+      {totalFunds?.reward && rewardsToken?.allowances[spender]?.exact.lt(totalFunds.reward.exact) ? (
         <>
           <h3>Approve amount</h3>
           <p>
-            Approve transfer of {totalFunds?.simple} {rewardsToken.symbol}
+            Approve transfer of {totalFunds.reward.simple} {rewardsToken.symbol}
           </p>
           <SendButton
             valid
             title="Approve"
             handleSend={() => {}}
             approve={{
-              address: rewardsToken?.address,
-              amount: totalFunds,
+              address: rewardsToken.address,
+              amount: totalFunds.reward,
               spender,
             }}
           />
@@ -103,7 +124,8 @@ const Input: FC = () => {
 const CustomRecipients: FC = () => {
   const [recipientValue, setRecipientValue] = useState<string>()
   const { recipientAmounts } = useEarnAdminState()
-  const { addCustomRecipient, removeCustomRecipient, setRecipientAmount } = useEarnAdminDispatch()
+  const { addCustomRecipient, removeCustomRecipient, setRewardAmount, setPlatformAmount } = useEarnAdminDispatch()
+  const [hasDualReward] = useToggleDualRewards()
 
   return (
     <div>
@@ -128,15 +150,23 @@ const CustomRecipients: FC = () => {
             .map(recipient => (
               <div key={recipient}>
                 <div>Address: {recipient}</div>
-                <div>Amount: {recipientAmounts[recipient].amount?.format()}</div>
+                <div>Amount: {recipientAmounts[recipient].reward?.amount?.format()}</div>
                 <div>
                   Set amount:{' '}
                   <input
                     type="number"
                     onChange={e => {
-                      setRecipientAmount(recipient, e.currentTarget.value)
+                      setRewardAmount(recipient, e.currentTarget.value)
                     }}
                   />
+                  {hasDualReward && (
+                    <input
+                      type="number"
+                      onChange={e => {
+                        setPlatformAmount(recipient, e.currentTarget.value)
+                      }}
+                    />
+                  )}
                 </div>
                 <div>
                   <Button
@@ -180,7 +210,7 @@ const Inputs: FC<{ reason?: string }> = ({ reason }) => {
   )
 }
 
-export const DistributeRewardsForm: FC<Props> = ({ hasDualReward = false }) => {
+export const DistributeRewardsForm: FC = () => {
   const account = useOwnAccount()
   const signer = useSigner()
   const {
@@ -190,10 +220,9 @@ export const DistributeRewardsForm: FC<Props> = ({ hasDualReward = false }) => {
     totalFunds,
   } = useEarnAdminState()
   const networkAddresses = useNetworkAddresses()
-
   const rewardsDistributorAddress = rewardsDistributor?.id
-
   const allowance = useTokenAllowance(networkAddresses.MTA, rewardsDistributorAddress)
+  const [hasDualReward] = useToggleDualRewards()
 
   const reason = useMemo<string | undefined>(() => {
     if (!account) {
@@ -208,17 +237,17 @@ export const DistributeRewardsForm: FC<Props> = ({ hasDualReward = false }) => {
       return 'Not a fund manager'
     }
 
-    if (!totalFunds?.exact.gt(0)) {
+    if (!totalFunds?.reward.exact.gt(0)) {
       return 'Funds not allocated'
     }
 
-    if (allowance.exact.lt(totalFunds?.exact)) {
+    if (allowance?.exact.lt(totalFunds?.reward.exact)) {
       return 'Exceeds approved amount'
     }
     return undefined
   }, [account, allowance, rewardsDistributor, rewardsDistributorAddress, totalFunds])
 
-  const valid = !reason
+  const valid = true // !reason
 
   const createTransaction = useCallback(
     (
@@ -230,28 +259,25 @@ export const DistributeRewardsForm: FC<Props> = ({ hasDualReward = false }) => {
         return RewardsDistributor__factory.connect(rewardsDistributorAddress, signer)
       })()
 
-      const baseArgs: [string[], BigNumber[]] = Object.entries(recipientAmounts)
+      const args: [string[], BigNumber[], BigNumber[]] = Object.entries(recipientAmounts)
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
         .filter(([_, { custom }]) => (useCustomRecipients ? !!custom : !custom))
-        .reduce<[string[], BigNumber[]]>(
-          ([addresses, amounts], [recipient, { amount }]) =>
-            amount?.exact
-              ? [
-                  [...addresses, recipient],
-                  [...amounts, (amount as BigDecimal).exact],
-                ]
-              : [addresses, amounts],
-          [[], []],
+        .reduce<[string[], BigNumber[], BigNumber[]]>(
+          ([addresses, rewardAmounts, platformAmounts], [recipient, { reward, platform }]) => [
+            [...addresses, recipient],
+            [...rewardAmounts, (reward?.amount ?? BigDecimal.ZERO).exact],
+            [...platformAmounts, (platform?.amount ?? BigDecimal.ZERO).exact],
+          ],
+          [[], [], []],
         )
 
-      if (!contract || !baseArgs.length) return
+      if (!contract || !args.length) return
 
       if (hasDualReward) {
         return new TransactionManifest<Interfaces.RewardsDistributorDual, 'distributeRewards'>(
           contract as RewardsDistributorDual,
           'distributeRewards',
-          // change
-          [...baseArgs, [(recipientAmounts[0] as BigDecimal).exact]],
+          args,
           {
             present: 'Distributing rewards',
             past: 'Distributed rewards',
@@ -263,7 +289,7 @@ export const DistributeRewardsForm: FC<Props> = ({ hasDualReward = false }) => {
       return new TransactionManifest<Interfaces.RewardsDistributor, 'distributeRewards'>(
         contract as RewardsDistributor,
         'distributeRewards',
-        baseArgs,
+        [args[0], args[1]],
         {
           present: 'Distributing rewards',
           past: 'Distributed rewards',

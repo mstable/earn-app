@@ -8,8 +8,14 @@ import { RewardsDistributor, useRewardsDistributorQuery } from '../../../../grap
 
 interface RecipientAmounts {
   [recipient: string]: {
-    amount?: BigDecimal
-    formValue?: string
+    reward?: {
+      amount?: BigDecimal
+      formValue?: string
+    }
+    platform?: {
+      amount?: BigDecimal
+      formValue?: string
+    }
     custom?: boolean
   }
 }
@@ -19,7 +25,10 @@ interface State {
     rewardsToken?: SubscribedToken
     rewardsDistributor?: RewardsDistributor
   }
-  totalFunds?: BigDecimal
+  totalFunds?: {
+    platform: BigDecimal
+    reward: BigDecimal
+  }
   recipientAmounts: RecipientAmounts
   useCustomRecipients: boolean
 }
@@ -27,7 +36,8 @@ interface State {
 interface Dispatch {
   addCustomRecipient(recipient: string): void
   removeCustomRecipient(recipient: string): void
-  setRecipientAmount(recipient: string, amount?: string): void
+  setRewardAmount(recipient: string, amount?: string): void
+  setPlatformAmount(recipient: string, amount?: string): void
   toggleCustomRecipients(): void
 }
 
@@ -35,7 +45,8 @@ enum Actions {
   AddCustomRecipient,
   Data,
   RemoveCustomRecipient,
-  SetRecipientAmount,
+  SetRewardAmount,
+  SetPlatformAmount,
   ToggleCustomRecipients,
 }
 
@@ -49,7 +60,11 @@ type Action =
       }
     }
   | {
-      type: Actions.SetRecipientAmount
+      type: Actions.SetRewardAmount
+      payload: { recipient: string; amount?: string }
+    }
+  | {
+      type: Actions.SetPlatformAmount
       payload: { recipient: string; amount?: string }
     }
   | { type: Actions.AddCustomRecipient; payload: { recipient: string } }
@@ -61,7 +76,7 @@ const reduce: Reducer<State, Action> = (state, action) => {
     case Actions.Data:
       return { ...state, data: action.payload }
 
-    case Actions.SetRecipientAmount: {
+    case Actions.SetRewardAmount: {
       const { amount, recipient } = action.payload
 
       const { rewardsToken = { decimals: 18 } } = state.data
@@ -70,8 +85,35 @@ const reduce: Reducer<State, Action> = (state, action) => {
         ...state.recipientAmounts,
         [recipient]: {
           ...state.recipientAmounts[recipient],
-          amount: BigDecimal.maybeParse(amount, rewardsToken.decimals),
-          formValue: amount,
+          reward: {
+            ...state.recipientAmounts[recipient]?.reward,
+            amount: BigDecimal.maybeParse(amount, rewardsToken.decimals),
+            formValue: amount,
+          },
+        },
+      }
+
+      return {
+        ...state,
+        recipientAmounts,
+      }
+    }
+
+    case Actions.SetPlatformAmount: {
+      const { amount, recipient } = action.payload
+
+      // FIXME: - change to platformToken
+      const { rewardsToken = { decimals: 18 } } = state.data
+
+      const recipientAmounts = {
+        ...state.recipientAmounts,
+        [recipient]: {
+          ...state.recipientAmounts[recipient],
+          platform: {
+            ...state.recipientAmounts[recipient]?.reward,
+            amount: BigDecimal.maybeParse(amount, rewardsToken.decimals),
+            formValue: amount,
+          },
         },
       }
 
@@ -90,7 +132,10 @@ const reduce: Reducer<State, Action> = (state, action) => {
         ...state,
         recipientAmounts: {
           ...state.recipientAmounts,
-          [recipient.toLowerCase()]: { custom: true },
+          [recipient.toLowerCase()]: {
+            ...state.recipientAmounts?.reward,
+            custom: true,
+          },
         },
       }
     }
@@ -117,14 +162,28 @@ const updateTotalFunds = (state: State): State => {
     data: { rewardsToken = { decimals: 18 } },
   } = state
 
-  const totalFunds = Object.values(recipientAmounts)
+  const rewardsFunds = Object.values(recipientAmounts)
     .filter(({ custom }) => (useCustomRecipients ? !!custom : !custom))
     .reduce(
-      (_totalRewards, { amount: _amount }) => (_amount ? _totalRewards.add(_amount) : _totalRewards),
+      (_totalRewards, { reward }) => (reward?.amount ? _totalRewards.add(reward.amount) : _totalRewards),
       new BigDecimal(0, rewardsToken.decimals),
     )
 
-  return { ...state, totalFunds }
+  // FIXME : - change rewardToken -> platformToken
+  const platformFunds = Object.values(recipientAmounts)
+    .filter(({ custom }) => (useCustomRecipients ? !!custom : !custom))
+    .reduce(
+      (_totalRewards, { platform }) => (platform?.amount ? _totalRewards.add(platform.amount) : _totalRewards),
+      new BigDecimal(0, rewardsToken.decimals),
+    )
+
+  return {
+    ...state,
+    totalFunds: {
+      reward: rewardsFunds,
+      platform: platformFunds,
+    },
+  }
 }
 
 const reducer: Reducer<State, Action> = pipeline(reduce, updateTotalFunds)
@@ -141,10 +200,20 @@ const stateCtx = createContext<State>(initialState)
 export const EarnAdminProvider: FC<{}> = ({ children }) => {
   const [state, dispatch] = useReducer(reducer, initialState)
 
-  const setRecipientAmount = useCallback<Dispatch['setRecipientAmount']>(
+  const setRewardAmount = useCallback<Dispatch['setRewardAmount']>(
     (recipient, amount) => {
       dispatch({
-        type: Actions.SetRecipientAmount,
+        type: Actions.SetRewardAmount,
+        payload: { recipient, amount },
+      })
+    },
+    [dispatch],
+  )
+
+  const setPlatformAmount = useCallback<Dispatch['setPlatformAmount']>(
+    (recipient, amount) => {
+      dispatch({
+        type: Actions.SetPlatformAmount,
         payload: { recipient, amount },
       })
     },
@@ -193,10 +262,11 @@ export const EarnAdminProvider: FC<{}> = ({ children }) => {
         () => ({
           addCustomRecipient,
           removeCustomRecipient,
-          setRecipientAmount,
+          setRewardAmount,
+          setPlatformAmount,
           toggleCustomRecipients,
         }),
-        [addCustomRecipient, removeCustomRecipient, setRecipientAmount, toggleCustomRecipients],
+        [addCustomRecipient, removeCustomRecipient, setPlatformAmount, setRewardAmount, toggleCustomRecipients],
       )}
     >
       <stateCtx.Provider value={state}>{children}</stateCtx.Provider>

@@ -14,10 +14,7 @@ import { useEarnAdminDispatch, useEarnAdminState } from './EarnAdminProvider'
 import { StakingRewardsContract } from '../../../../context/earn/types'
 import { Token } from '../../../../types'
 import { useSigner } from '../../../../context/AccountProvider'
-
-interface Props {
-  hasDualReward?: boolean
-}
+import { useToggleDualRewards } from '../../../../hooks/useToggleDualRewards'
 
 enum Columns {
   StakingToken,
@@ -55,11 +52,12 @@ const COLUMNS = [
   },
 ]
 
-export const StakingRewardContractsTable: FC<Props> = ({ hasDualReward = false }) => {
+export const StakingRewardContractsTable: FC = () => {
   const signer = useSigner()
   const stakingRewardsContracts = useStakingRewardsContracts()
-  const { setRecipientAmount } = useEarnAdminDispatch()
+  const { setRewardAmount, setPlatformAmount } = useEarnAdminDispatch()
   const { recipientAmounts } = useEarnAdminState()
+  const [hasDualReward] = useToggleDualRewards()
 
   const [airdropBalances, setAirdropBalances] = useState<{
     [address: string]: BigDecimal | undefined
@@ -133,8 +131,16 @@ export const StakingRewardContractsTable: FC<Props> = ({ hasDualReward = false }
                   case Columns.AmountToFund: {
                     return (
                       <div>
-                        <AmountInput value={recipientAmounts[id]?.formValue} onChange={formValue => setRecipientAmount(id, formValue)} />
-                        <AmountInput value={recipientAmounts[id]?.formValue} onChange={formValue => setRecipientAmount(id, formValue)} />
+                        <AmountInput
+                          value={recipientAmounts[id]?.reward?.formValue}
+                          onChange={formValue => setRewardAmount(id, formValue)}
+                        />
+                        {hasDualReward && (
+                          <AmountInput
+                            value={recipientAmounts[id]?.platform?.formValue}
+                            onChange={formValue => setPlatformAmount(id, formValue)}
+                          />
+                        )}
                       </div>
                     )
                   }
@@ -178,7 +184,7 @@ export const StakingRewardContractsTable: FC<Props> = ({ hasDualReward = false }
             { id, colors, data: {} },
           )
         }),
-    [recipientAmounts, setRecipientAmount, stakingRewardsContracts, airdropBalances],
+    [stakingRewardsContracts, airdropBalances, recipientAmounts, hasDualReward, setRewardAmount, setPlatformAmount],
   )
 
   return <Table columns={COLUMNS} items={items} />
