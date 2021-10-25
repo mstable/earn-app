@@ -182,8 +182,10 @@ const OnboardProvider: FC<{
             { walletName: 'authereum' },
             {
               walletName: 'walletConnect',
-              infuraKey: 'a6daf77ef0ae4b60af39259e435a40fe',
               preferred: true,
+              rpc: {
+                1: 'https://mainnet.infura.io/v3/a6daf77ef0ae4b60af39259e435a40fe'
+              },
             },
             { walletName: 'opera' },
             { walletName: 'operaTouch' },
