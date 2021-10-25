@@ -7,6 +7,7 @@ const transform = ({
   },
   ...config
 }) => {
+  config.optimization.minimizer[0].options.parallel = 2;
   return {
     ...config,
     // Edit the Webpack config
