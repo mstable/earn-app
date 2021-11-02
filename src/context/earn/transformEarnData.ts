@@ -12,6 +12,7 @@ const BAL_REWARDS_EXCEPTIONS: Set<String> = new Set([
 ])
 
 const EXPIRED_POOLS: Set<string> = new Set([
+  '0x9b4aba35b35eee7481775ccb4055ce4e176c9a6f', // Uniswap MTA/WETH 50/50
   '0x25970282aac735cd4c76f30bfb0bf2bc8dad4e70', // MTA/mUSD 80/20
   '0x0d4cd2c24a4c9cd31fcf0d3c4682d234d9f94be4', // MTA/mUSD 95/5
   '0xf4a7d2d85f4ba11b5c73c35e27044c0c49f7f027', // MTA/mUSD 5/95
