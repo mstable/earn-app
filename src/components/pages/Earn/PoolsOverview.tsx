@@ -96,9 +96,9 @@ const COLUMNS = [
 ]
 
 const platformOrder: { [key in Platforms]: number } = {
-  [Platforms.Curve]: 0,
+  [Platforms.Uniswap]: 0,
   [Platforms.Balancer]: 1,
-  [Platforms.Uniswap]: 2,
+  [Platforms.Curve]: 2,
   [Platforms.Sushi]: 3,
   [Platforms.Badger]: 4,
   [Platforms.Cream]: 5,
