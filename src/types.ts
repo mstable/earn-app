@@ -5,6 +5,7 @@ import type {
   MerkleDrop,
   MusdGauge,
   RewardsDistributor,
+  RewardsDistributorDual,
   StakingRewards,
   StakingRewardsWithPlatformToken,
   UniswapRouter02,
@@ -29,7 +30,8 @@ export enum Interfaces {
   SavingsContract,
   StakingRewards,
   StakingRewardsWithPlatformToken,
-  RewardsDistibutor,
+  RewardsDistributor,
+  RewardsDistributorDual,
   MerkleDrop,
   CurveGauge,
   CurveTokenMinter,
@@ -48,7 +50,8 @@ export interface Instances {
   [Interfaces.SavingsContract]: ISavingsContractV2
   [Interfaces.StakingRewards]: StakingRewards
   [Interfaces.StakingRewardsWithPlatformToken]: StakingRewardsWithPlatformToken
-  [Interfaces.RewardsDistibutor]: RewardsDistributor
+  [Interfaces.RewardsDistributor]: RewardsDistributor
+  [Interfaces.RewardsDistributorDual]: RewardsDistributorDual
   [Interfaces.MerkleDrop]: MerkleDrop
   [Interfaces.CurveGauge]: MusdGauge
   [Interfaces.CurveTokenMinter]: TokenMinter
